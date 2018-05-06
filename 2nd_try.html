@@ -1,0 +1,97 @@
+
+<head>
+  <script src="http://d3js.org/d3.v4.min.js"></script>
+  <script src="http://dimplejs.org/dist/dimple.v2.3.0.min.js"></script>
+</head>
+<body>
+  <div id="chartContainer">
+    <script type="text/javascript">
+        var svg = dimple.newSvg("#chartContainer", 590, 400);
+        d3.csv("flights_per_month_stacked.csv", function (data) {
+        //http://dimplejs.org/advanced_examples_viewer.html?id=advanced_change_bubbles
+        // creates a fore and background charts
+        var series,
+                // Set a background and foreground chart
+                charts = [
+                  new dimple.chart(svg, null),
+                  new dimple.chart(svg, data)
+                ],
+                lastDate = null,
+                month_ids = dimple.getUniqueValues(data, "Month_id");
+                // Define 2 nearly identical charts.  It's essential
+                // for this that the max and minimum values are fixed
+                // and unmoving otherwise the background chart will get
+                // out of sync with the foreground the background chart's
+                // axes are hidden and it's colors are faded.  Both have
+                // their borders set to white, which looks better on this chart
+                charts.forEach(function (chart, i) {
+                  var x, y, z;
+                  chart.setBounds(60, 30, 510, 330);
+                  x = chart.addMeasureAxis("x", "Month_id");
+                  x.overrideMax = 5000;
+                  x.hidden = (i === 0);
+                  y = chart.addMeasureAxis("y", "0");
+                  y.overrideMax = 120;
+                  y.hidden = (i === 0);
+//                  z = chart.addMeasureAxis("z", "Distribution");
+//                  z.overrideMax = 120;
+                  // Ensure the same colors for every owner in both charts
+                  // differing by opacity
+                  month_ids.forEach(function (month_id, k) {
+                    chart.assignColor(
+                      month_id,
+                      charts[0].defaultColors[k],//.fill,
+                      "white",
+                      (i === 0 ? 0.3 : 1));
+                    }, this);
+                  }, this);
+
+                  // Define a storyboard on the main chart, this will iterate
+                  // all dates and redraw for each, the callback will build the
+                  // the background chart
+                  charts[1].setStoryboard("Month_id", function (d) {
+                    console.log(d)
+                    console.log(lastDate)
+                    console.log(lastSeries)
+                    // Use the last date variable to manage the previous tick's data
+                    if (lastDate !== null) {
+                      // Pull the previous data
+                      var lastData = dimple.filterData(data, "Month_id", lastDate);
+                      // Add a series to the background chart to display old position
+                      var lastSeries = charts[0].addSeries("Origin", dimple.plot.area);
+                      // Average suits these measures better
+                      //lastSeries.aggregate = dimple.aggregateMethod.avg;
+                      // Give each series its own data at different periods
+                      lastSeries.data = lastData;
+                      // Draw the background chart
+                      charts[0].draw();
+                      // Class all shapes as .historic
+                      lastSeries.shapes.classed("historic", true);
+                      // Reduce all opacity and remove once opacity drops below 5%
+                      //d3.selectAll(".historic")
+                      //.each(function () {
+                      //  var shape = d3.select(this),
+                      //  opacity = shape.style("opacity") - 0.02;
+                      //  shape.style("opacity", opacity);
+                      //});
+                    }
+                    lastDate = d;
+                  });
+                  // Add the primary series to the main chart
+                  series = charts[1].addSeries("Origin", dimple.plot.area)
+                  //series.aggregate = dimple.aggregateMethod.avg;
+                  // Draw the main chart
+                  charts[1].draw();
+//        var myChart = new dimple.chart(svg, data);
+//        myChart.setBounds(60, 30, 510, 305)
+//        var x = myChart.addCategoryAxis("x", "Month_id");
+//        x.addOrderRule("Date");
+//        myChart.addMeasureAxis("y", "0");
+//        myChart.addSeries(null, dimple.plot.line);
+//        myChart.addSeries("Origin", dimple.plot.area);
+        // Animate the chart by date values
+//        myChart.setStoryboard("Month_id");
+//        myChart.draw();
+      });
+    </script>
+  </div></body>
